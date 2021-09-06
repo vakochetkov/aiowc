@@ -15,9 +15,11 @@ if sys.version_info < MINIMAL_PY_VERSION:
 
 setup(
     name='aiowc',                    
-    version='1.0',                          
+    version='1.1',                          
     description='Asynchronous Python wrapper for WooCommerce REST API',  
+    long_description="Asynchronous Python wrapper for WooCommerce REST API. See github for details.",
     author="Vladislav Kochetkov",    
+    author_email="vakochetkov@gmail.com",
     url='https://github.com/vakochetkov/aiowc',  
     license="MIT License",    
     packages=[

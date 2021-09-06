@@ -11,7 +11,7 @@ Based on `aiohttp <https://github.com/aio-libs/aiohttp>`_ and `wc-api-python <ht
 
 Installation
 ~~~~~~~~~~~~
-``pip install aiowc`` or ``python3 -m pip install aiowc``
+``pip install aiowc`` or ``pip install "git+https://github.com/vakochetkov/aiowc"``
 
 Getting started
 ~~~~~~~~~~~~~~~

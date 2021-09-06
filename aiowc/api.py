@@ -9,7 +9,7 @@ class API(object):
     """ API class, it tries to be compatible with the synchronous version
         Consists parameters for APISession """
     def __init__(self, url, consumer_key, consumer_secret, **kwargs):
-        self.VERSION = 1.0
+        self.VERSION = 1.1
 
         self.url = url
         self.consumer_key = consumer_key
