@@ -10,7 +10,7 @@ An asyncrounous Python wrapper for WooCommerce API compatible with syncrounous w
 
 
 __title__ = "aiowc"
-__version__ = "1.0.0"
+__version__ = "0.2.3"
 __author__ = "vakochetkov"
 __license__ = "MIT"
 

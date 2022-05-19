@@ -10,9 +10,11 @@ class SessionParams():
     consumer_secret: str = None
     version: str  = "wc/v3"
     wp_api: bool  = True 
+    is_ssl: bool  = False
     timeout: int  = 30 # in seconds
     verify_ssl: bool = True
     user_agent: str = None
+    query_string_auth: bool = False
 
 
 @dataclass

@@ -1,8 +1,10 @@
 import asyncio
 import aiohttp
 import json
-
+from time import time
+from urllib.parse import urlencode
 from aiowc.params import SessionParams, RequestParams 
+from aiowc.oauth import OAuth
 
 
 class API(object):
@@ -20,6 +22,7 @@ class API(object):
         self.timeout = kwargs.get("timeout", 30)
         self.verify_ssl = kwargs.get("verify_ssl", True)
         self.user_agent = kwargs.get("user_agent", f"WooCommerce-Python-aiowc/{self.VERSION}")
+        self.query_string_auth = kwargs.get("query_string_auth", False)
 
         self.session_params = SessionParams(
             self.url,
@@ -27,9 +30,11 @@ class API(object):
             self.consumer_secret,
             self.version,
             self.wp_api,
+            self.is_ssl,
             self.timeout,
             self.verify_ssl,
-            self.user_agent
+            self.user_agent,
+            self.query_string_auth
         )
 
 
@@ -58,9 +63,18 @@ class APISession(object):
         self.session = None
 
 
-    def __build_full_url(self, request: RequestParams) -> str:
-        wp_api = "wp-json" if self.params.wp_api else "wc-api"
-        return f"{self.params.url}/{wp_api}/{self.params.version}/{request.endpoint}"
+    def __get_url(self, endpoint):
+        """ Get URL for requests """
+        url = self.params.url
+        api = "wc-api"
+
+        if url.endswith("/") is False:
+            url = f"{url}/"
+
+        if self.params.wp_api:
+            api = "wp-json"
+
+        return f"{url}{api}/{self.params.version}/{endpoint}"
 
 
     def __build_headers(self, request: RequestParams) -> dict:
@@ -69,14 +83,46 @@ class APISession(object):
                 "accept": "application/json"
         }
         if request.use_data:
-            data = json.dumps(request.data, ensure_ascii=True).encode('utf-8')
             headers["content-type"] = "application/json;charset=utf-8"
         return headers
 
-            
-    async def __request(self, method, endpoint, data, params=None):
+
+    def __get_oauth_url(self, url, method, **kwargs):
+        """ Generate oAuth1.0a URL """
+        oauth = OAuth(
+            url=url,
+            consumer_key=self.params.consumer_key,
+            consumer_secret=self.params.consumer_secret,
+            version=self.params.version,
+            method=method,
+            oauth_timestamp=kwargs.get("oauth_timestamp", int(time()))
+        )
+
+        return oauth.get_oauth_url()
+
+
+    async def __request(self, method, endpoint, data, params=None, **kwargs):
+        if params is None:
+            params = {}
+
+        url = self.__get_url(endpoint)
+        auth = None
+
+        if self.params.is_ssl is True and self.params.query_string_auth is False:
+            auth = aiohttp.BasicAuth(self.params.consumer_key, self.params.consumer_secret)
+        elif self.params.is_ssl is True and self.params.query_string_auth is True:
+            params.update({
+                "consumer_key": self.params.consumer_key,
+                "consumer_secret": self.params.consumer_secret
+            })
+        else:
+            encoded_params = urlencode(params)
+            url = f"{url}?{encoded_params}"
+            url = self.__get_oauth_url(url, method, **kwargs)
+
         if data is not None:
             use_data = True
+            data = json.dumps(data, ensure_ascii=False).encode('utf-8')
         else:
             use_data = False
 
@@ -86,13 +132,14 @@ class APISession(object):
 
         return await self.session.request(
             method=request.method,
-            url=self.__build_full_url(request),
-            auth=aiohttp.BasicAuth(self.params.consumer_key, self.params.consumer_secret),
+            url=url,
+            auth=auth,
             timeout=aiohttp.ClientTimeout(self.params.timeout),
             ssl=self.params.verify_ssl,
             headers=self.__build_headers(request),
             data=request.data,
-            params=request.params
+            params=request.params,
+            **kwargs
         ) 
 
 
